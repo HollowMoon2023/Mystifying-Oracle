@@ -1,0 +1,5 @@
+{
+  "name": "Mystifying Oracle",
+  "description": "An interactive Ouija board experience powered by Gemini. Ask a question and watch as the spirits guide the planchette to spell out a mysterious, cryptic answer.",
+  "requestFramePermissions": []
+}
