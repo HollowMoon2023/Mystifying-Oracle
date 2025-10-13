@@ -31,11 +31,11 @@ const PersonaSelector: React.FC<PersonaSelectorProps> = ({ personas, onSelect, o
           to { opacity: 1; transform: scale(1); }
         }
       `}</style>
-      <div className="bg-stone-900/80 border border-amber-900/40 p-6 md:p-8 rounded-xl max-w-4xl w-full shadow-2xl shadow-black/50">
+      <div className="bg-stone-900/80 border border-amber-900/40 p-6 md:p-8 rounded-xl max-w-5xl w-full shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]">
         <h2 className="text-3xl md:text-4xl font-ouija text-amber-300 text-center mb-6 tracking-wider">Choose a Spirit to Summon</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[200px] content-center">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 min-h-[200px] overflow-y-auto pr-2">
           {isLoading ? (
-            <div className="col-span-3 text-center text-stone-400 font-ouija text-xl p-8 animate-pulse">
+            <div className="col-span-full text-center text-stone-400 font-ouija text-xl p-8 animate-pulse">
               Reaching into the ether...
             </div>
           ) : (
@@ -44,7 +44,7 @@ const PersonaSelector: React.FC<PersonaSelectorProps> = ({ personas, onSelect, o
             ))
           )}
         </div>
-        <div className="text-center mt-8">
+        <div className="text-center mt-8 flex-shrink-0">
             <button 
                 onClick={onClose} 
                 className="px-6 py-2 bg-stone-800/50 text-stone-400 font-bold rounded-md hover:bg-stone-700/50 border border-stone-700/50 transition-all duration-300"

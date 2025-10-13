@@ -14,3 +14,9 @@ export interface Persona {
   backstory: string;
   systemInstruction: string;
 }
+
+// Represents the chat history for a persona
+export type ConversationHistory = {
+    role: string;
+    parts: { text: string }[];
+}[];

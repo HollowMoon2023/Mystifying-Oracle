@@ -8,6 +8,7 @@ interface OuijaBoardProps {
   charPositionsRef: React.MutableRefObject<Map<string, CharPosition>>;
   boardChars: BoardLayout;
   isThinking: boolean;
+  layoutMode: 'desktop' | 'mobile';
 }
 
 const SunIcon = () => (
@@ -54,6 +55,7 @@ const BoardCharacter: React.FC<{ char: string; style?: React.CSSProperties }> = 
 );
 
 const ArcText: React.FC<{ chars: string[], radius: number, arc: number, startAngle: number }> = ({ chars, radius, arc, startAngle }) => {
+    if (!chars || radius <= 0) return null;
     const angleStep = arc / (chars.length - 1);
     return (
         <div className="absolute w-full h-full flex items-center justify-center pointer-events-none">
@@ -70,9 +72,9 @@ const ArcText: React.FC<{ chars: string[], radius: number, arc: number, startAng
 };
 
 
-export const OuijaBoard: React.FC<OuijaBoardProps> = ({ planchettePosition, charPositionsRef, boardChars, isThinking }) => {
+export const OuijaBoard: React.FC<OuijaBoardProps> = ({ planchettePosition, charPositionsRef, boardChars, isThinking, layoutMode }) => {
   const boardRef = useRef<HTMLDivElement>(null);
-  const [arcRadii, setArcRadii] = useState({ radius1: 180, radius2: 260 });
+  const [arcRadii, setArcRadii] = useState({ r1: 0, r2: 0, r3: 0 });
 
   useLayoutEffect(() => {
     if (!boardRef.current) return;
@@ -82,31 +84,35 @@ export const OuijaBoard: React.FC<OuijaBoardProps> = ({ planchettePosition, char
       const boardRect = board.getBoundingClientRect();
       if (boardRect.width === 0 || boardRect.height === 0) return;
 
-      // 1. Update radii based on current board height for responsiveness
-      setArcRadii({
-        radius1: boardRect.height * 0.30,
-        radius2: boardRect.height * 0.43,
-      });
+      if (layoutMode === 'mobile') {
+        setArcRadii({
+            r1: boardRect.height * 0.25,
+            r2: boardRect.height * 0.34,
+            r3: boardRect.height * 0.43,
+        });
+      } else { // desktop
+        setArcRadii({
+            r1: boardRect.height * 0.30,
+            r2: boardRect.height * 0.43,
+            r3: 0,
+        });
+      }
 
-      // 2. Defer position calculation until after the next render cycle,
-      // ensuring the DOM has updated with the new radii.
       setTimeout(() => {
         const positions = new Map<string, CharPosition>();
         const allElements = board.querySelectorAll('[data-char]');
-        const currentBoardRect = board.getBoundingClientRect(); // Re-measure after render
+        const currentBoardRect = board.getBoundingClientRect();
 
         allElements.forEach(element => {
           const char = element.getAttribute('data-char');
           if (char) {
             const rect = element.getBoundingClientRect();
-            // Center the 100x90 planchette over the character
             const top = `${rect.top - currentBoardRect.top + rect.height / 2 - 45}px`;
             const left = `${rect.left - currentBoardRect.left + rect.width / 2 - 50}px`;
             positions.set(char, { top, left });
           }
         });
         
-        // Add a position for the space character (resting position)
         positions.set(' ', { 
           top: `${currentBoardRect.height * 0.45}px`, 
           left: `${currentBoardRect.width / 2 - 50}px` 
@@ -119,16 +125,18 @@ export const OuijaBoard: React.FC<OuijaBoardProps> = ({ planchettePosition, char
     const resizeObserver = new ResizeObserver(calculateLayout);
     resizeObserver.observe(board);
 
-    calculateLayout(); // Initial calculation
+    calculateLayout();
 
     return () => resizeObserver.disconnect();
-  }, [charPositionsRef]);
+  }, [charPositionsRef, layoutMode]);
+
+  const boardAspectRatio = layoutMode === 'mobile' ? 'aspect-[1/1.3]' : 'aspect-[1.5/1]';
 
   return (
     <div
       id="ouija-board"
       ref={boardRef}
-      className="relative w-full max-w-5xl aspect-[1.5/1] rounded-lg shadow-2xl shadow-black/70 p-4 md:p-6 mt-4 select-none"
+      className={`relative w-full max-w-5xl ${boardAspectRatio} rounded-lg shadow-2xl shadow-black/70 p-4 md:p-6 mt-4 select-none`}
       style={{
           background: 'radial-gradient(ellipse at center, #f5d37b 0%, #d4a94a 70%, #c7953c 100%)',
           boxShadow: 'inset 0 0 0 8px #000, inset 0 0 0 12px #c7a461, inset 0 0 30px rgba(0,0,0,0.5)'
@@ -159,12 +167,35 @@ export const OuijaBoard: React.FC<OuijaBoardProps> = ({ planchettePosition, char
             </div>
 
             <div className="w-full h-full absolute top-0 left-0 pointer-events-none">
-              <ArcText chars={boardChars.alphabetArc1} radius={arcRadii.radius1} arc={140} startAngle={-70} />
-              <ArcText chars={boardChars.alphabetArc2} radius={arcRadii.radius2} arc={150} startAngle={-75} />
+                {layoutMode === 'mobile' ? (
+                  <>
+                    <ArcText chars={boardChars.alphabetArc1} radius={arcRadii.r1} arc={130} startAngle={-65} />
+                    <ArcText chars={boardChars.alphabetArc2} radius={arcRadii.r2} arc={140} startAngle={-70} />
+                    <ArcText chars={boardChars.alphabetArc3} radius={arcRadii.r3} arc={150} startAngle={-75} />
+                  </>
+                ) : (
+                  <>
+                    <ArcText chars={boardChars.alphabetArc1} radius={arcRadii.r1} arc={140} startAngle={-70} />
+                    <ArcText chars={boardChars.alphabetArc2} radius={arcRadii.r2} arc={150} startAngle={-75} />
+                  </>
+                )}
             </div>
             
-            <div className="w-full flex justify-center gap-x-3 md:gap-x-5 mt-auto mb-10 md:mb-16">
-                 {boardChars.numbers.map(char => <BoardCharacter key={char} char={char} />)}
+            <div className="w-full mt-auto mb-10 md:mb-16">
+                 {layoutMode === 'mobile' ? (
+                    <div className="w-full flex flex-col items-center gap-y-2">
+                        <div className="flex justify-center gap-x-3 md:gap-x-5">
+                            {boardChars.numbersRow1?.map(char => <BoardCharacter key={char} char={char} />)}
+                        </div>
+                        <div className="flex justify-center gap-x-3 md:gap-x-5">
+                            {boardChars.numbersRow2?.map(char => <BoardCharacter key={char} char={char} />)}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex justify-center gap-x-3 md:gap-x-5">
+                        {boardChars.numbers?.map(char => <BoardCharacter key={char} char={char} />)}
+                    </div>
+                )}
             </div>
 
             <div className="w-full flex justify-center pb-2">
